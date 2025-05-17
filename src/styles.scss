@@ -1,1 +1,43 @@
 /* You can add global styles to this file, and also import other style files */
+
+:root {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+// buttons
+button {
+    font-size: 16pt;
+    font-weight: lighter;
+    outline: none;
+    border: none;
+    padding: 5px 20px;
+    border-radius: 100px;
+    background-color: rgba(255,255,255, 0.4);
+    transition: all 0.2s 0s ease;
+}
+button:hover {
+    background-color: white;
+}
+
+button:has(.bi) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background-color: transparent;
+    color: rgba(255,255,255, 0.4);
+}
+button:has(.bi):hover {
+    color: white;
+    background-color: rgba(255,255,255, 0.4);
+}
+i.bi {
+    width: 25px;
+    height: 25px;
+}

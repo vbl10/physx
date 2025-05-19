@@ -24,18 +24,23 @@
       <button (click)="stopLoop()"><i class="bi bi-pause-fill"></i></button>
     </div>
     <div style="color: white;">
-      <p>
-        a: ({{ collision?.a?.x ?? 0 }}, {{ collision?.a?.y ?? 0 }})
-      </p>
-      <p>
-        b: ({{ collision?.b?.x ?? 0 }}, {{ collision?.b?.y ?? 0 }})
-      </p>
-      <p>
-        normal: ({{ collision?.n?.x ?? 0 }}, {{ collision?.n?.y ?? 0 }})
-      </p>
-      <p>
-        depth: {{ collision?.d ?? 0 }}
-      </p>
+      <!--
+        <p>
+          a: ({{ collision?.a?.x ?? 0 }}, {{ collision?.a?.y ?? 0 }})
+        </p>
+        <p>
+          b: ({{ collision?.b?.x ?? 0 }}, {{ collision?.b?.y ?? 0 }})
+        </p>
+        <p>
+          normal: ({{ collision?.n?.x ?? 0 }}, {{ collision?.n?.y ?? 0 }})
+        </p>
+        <p>
+          depth: {{ collision?.d ?? 0 }}
+        </p>
+        <p>
+          iterations: {{iterationsPerFrame}}
+        </p>
+      -->
     </div>
   </div>
   <div 

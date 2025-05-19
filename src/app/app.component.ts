@@ -6,6 +6,8 @@ import { Scene } from './physics/Scene';
 import { Polygon } from './physics/rigid-bodies/Polygon';
 import { RigidBody } from './physics/rigid-bodies/RigidBody';
 import { Ellipse } from './physics/rigid-bodies/Ellipse';
+import { DistanceToAnchor, DistanceToBody } from './physics/constraints/Distance';
+import { Rect } from './physics/rigid-bodies/Rect';
 
 @Component({
   selector: 'app-root',
@@ -26,10 +28,11 @@ export class AppComponent implements AfterViewInit {
   private scene: Scene;
   private grab: {
     obj?: RigidBody,
-    readonly pos: Vector,
+    constraint: DistanceToAnchor,
   } = {
-    pos: new Vector()
+    constraint: new DistanceToAnchor(new Vector(), 0, 0.1)
   };
+  iterationsPerFrame = 0;
 
   private kbd = new Keyboard();
 
@@ -62,23 +65,51 @@ export class AppComponent implements AfterViewInit {
       new Vector(7, 3),
       new Vector(10, 2),
     ]);
+    p2.pos.x += 5;
+
     const c1 = new Circle(1);
-    c1.pos.x = 10;
-    c1.pos.y = 10;
+    c1.pos.x = 8;
+    c1.pos.y = 12;
+    
     const e1 = new Ellipse(2, 1);
     e1.pos.x = 10;
-    e1.pos.y = 13;
+    e1.pos.y = 14;
 
     const c2 = new Circle(1);
     c2.pos.x = 15;
     c2.pos.y = 10;
+    c2.mass = 10;
+
+    const walls = [
+      new Rect(new Vector(36, 0.1)),
+      new Rect(new Vector(36, 0.1)),
+      new Rect(new Vector(0.1, 19)),
+      new Rect(new Vector(0.1, 19))
+    ];
+    walls[0].pos.x = 18;
+    walls[0].pos.y = 0.05;
+    walls[1].pos.x = 18;
+    walls[1].pos.y = 19.95;
+    walls[2].pos.x = 0.05;
+    walls[2].pos.y = 10;
+    walls[3].pos.x = 35.95;
+    walls[3].pos.y = 10;
+    walls.forEach(wall => wall.mass = Number.MAX_VALUE);
+
+    p1.mass = Number.MAX_VALUE;
+    p2.mass = Number.MAX_VALUE;
+    e1.mass = Number.MAX_VALUE;
+
+    c1.constraints.push(new DistanceToBody(c2, c1.pos.clone().sub(c2.pos).len(), 0));
 
     this.scene.objects.push(
+      ...walls,
       p1, 
       p2,
       e1,
       c1,
       c2,
+      ...[0, 1, 2, 3, 4].map(i => { const c = new Circle(1); c.pos.y = 2; c.pos.x = 2 + i * 2.1; return c;})
     );
   }
 
@@ -96,17 +127,19 @@ export class AppComponent implements AfterViewInit {
       for (let obj of this.scene.objects) {
         if (obj.contains(p)) {
           this.grab.obj = obj;
-          this.grab.pos.copy(p.sub(obj.pos));
+          this.grab.obj.constraints.push(this.grab.constraint);
+          this.grab.constraint.anchor.copy(p);
           break;
         }
       }
     });
     this.canvasElmt.nativeElement.addEventListener('mouseup', () => {
+      this.grab.obj?.constraints.splice(this.grab.obj.constraints.findIndex(val => val == this.grab.constraint), 1);
       this.grab.obj = undefined;
     });
     this.canvasElmt.nativeElement.addEventListener('mousemove', (ev) => {
       if (this.grab.obj) {
-        this.grab.obj.pos.copy(this.scene.screenToWorld(ctx, new Vector(ev.clientX, ev.clientY)).sub(this.grab.pos));
+        this.grab.constraint.anchor.copy(this.scene.screenToWorld(ctx, new Vector(ev.clientX, ev.clientY)));
       }
     });
 
@@ -139,7 +172,7 @@ export class AppComponent implements AfterViewInit {
       }
     }
 
-    this.scene.update(dt);
+    this.iterationsPerFrame = this.scene.update(dt, this.kbd);
   }
 
   draw() {
@@ -169,10 +202,7 @@ export class AppComponent implements AfterViewInit {
     const dt = (tp1 - this.tp0) / 1000;
     this.tp0 = tp1;
 
-    const dt2 = dt / 600;
-    for (let i = 0; i < 600; i++) {
-      this.update(dt2);
-    }
+    this.update(dt);
     
     this.draw();
 

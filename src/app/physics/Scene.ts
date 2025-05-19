@@ -2,6 +2,7 @@ import { RigidBody } from "./rigid-bodies/RigidBody";
 import { Vector } from "../utils/Vector";
 import { Polygon } from "./rigid-bodies/Polygon";
 import { Circle } from "./rigid-bodies/Circle";
+import { Keyboard } from "../utils/Keyboard";
 
 export class Scene {
     public objects: RigidBody[] = [];
@@ -13,45 +14,60 @@ export class Scene {
     ) {
     }
 
-    update(dt: number) {
-        // pre solve
-        for (let obj of this.objects) {
-            obj.vel.add(obj.acc.clone().add(this.gravity).mult(dt));
-            obj.prevPos.copy(obj.pos);
-            obj.pos.add(obj.vel.clone().mult(dt));
-            obj.angularVel += obj.angularAcc * dt;
-            obj.angle += obj.angularVel * dt;
-        }
+    update(_dt: number, kbd: Keyboard) {
+        let dt = 1/3600;
+        const iters = Math.floor(_dt / dt);
+        dt = _dt / iters;
+        for (let iter = 0; iter < iters; iter++) {
+            // pre solve
+            for (let obj of this.objects) {
+                obj.vel.add(obj.acc.clone().add(this.gravity).mult(dt));
+                obj.prevPos.copy(obj.pos);
+                obj.pos.add(obj.vel.clone().mult(dt));
+                obj.angularVel += obj.angularAcc * dt;
+                obj.angle += obj.angularVel * dt;
+            }
 
-        
-        // solve
-        for (let obj of this.objects) {
-            /*
+            // solve
+            for (let i = 0; i < this.objects.length; i++) {
+                let one = this.objects[i];
 
-            a - b
-            avi + oa - bvi - ob
-
-            // collision constraints
-            for (let other of this.objects) {
-                if (obj != other) {
-                    const collision = obj.collide(other);
-                    if (collision) {               
+                // collisions
+                for (let j = i + 1; j < this.objects.length; j++) {
+                    let other = this.objects[j];
+                    if (one != other) {
+                        const collision = one.collide(other);
+                        if (collision) {
+                            const alpha = 0.0001 / dt / dt;
+                            const ba = collision.a.clone().sub(collision.b);
+                            const w1 = 1 / one.mass;
+                            const w2 = 1 / other.mass;
+                            
+                            if (collision.d > 0) {
+                                const grad = ba.clone().div(collision.d);
+                                const C = collision.d - 0;
+                                const s = -C / (w1 + w2 + alpha);
+                                
+                                one.pos.add(grad.clone().mult(s * w1));
+                                other.pos.add(grad.mult(-s * w2));
+                            }
+                        }
                     }
                 }
-            }
-            */
 
-            for (let constraint of obj.constraints) {
-                constraint.solve(obj, dt);
+                for (let constraint of one.constraints) {
+                    constraint.solve(one, dt);
+                }
+            }
+
+            // post solve
+            for (let obj of this.objects) {
+                // update velocity
+                if (dt != 0)
+                    obj.vel.copy(obj.pos.clone().sub(obj.prevPos).div(dt));
             }
         }
-
-        // post solve
-        for (let obj of this.objects) {
-            // update velocity
-            if (dt != 0)
-                obj.vel.copy(obj.pos.clone().sub(obj.prevPos).div(dt));
-        }
+        return iters;
     }
 
     screenToWorld(ctx: CanvasRenderingContext2D, s: Vector): Vector {
